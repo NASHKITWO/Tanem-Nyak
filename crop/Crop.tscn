@@ -1,0 +1,58 @@
+[gd_scene load_steps=11 format=2]
+
+[ext_resource path="res://tilesets/crop-grow.png" type="Texture" id=1]
+[ext_resource path="res://crop/Crop.gd" type="Script" id=2]
+[ext_resource path="res://crop/redish.shader" type="Shader" id=3]
+[ext_resource path="res://Substract.gd" type="Script" id=4]
+
+[sub_resource type="ShaderMaterial" id=1]
+resource_local_to_scene = true
+shader = ExtResource( 3 )
+shader_param/redish = false
+
+[sub_resource type="AtlasTexture" id=2]
+atlas = ExtResource( 1 )
+region = Rect2( 0, 0, 16, 16 )
+
+[sub_resource type="AtlasTexture" id=3]
+atlas = ExtResource( 1 )
+region = Rect2( 16, 0, 16, 16 )
+
+[sub_resource type="AtlasTexture" id=4]
+atlas = ExtResource( 1 )
+region = Rect2( 32, 0, 16, 16 )
+
+[sub_resource type="SpriteFrames" id=5]
+animations = [ {
+"frames": [ SubResource( 2 ), SubResource( 3 ), SubResource( 4 ) ],
+"loop": false,
+"name": "grow",
+"speed": 1.0
+} ]
+
+[sub_resource type="RectangleShape2D" id=6]
+extents = Vector2( 8, 8 )
+
+[node name="Crop" type="Area2D"]
+script = ExtResource( 2 )
+needs = {
+"K": 1.0,
+"N": 1.0,
+"P": 1.0
+}
+
+[node name="Sprite" type="AnimatedSprite" parent="."]
+material = SubResource( 1 )
+position = Vector2( 8, 8 )
+frames = SubResource( 5 )
+animation = "grow"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2( 8, 8 )
+shape = SubResource( 6 )
+
+[node name="Substract" type="Node" parent="."]
+script = ExtResource( 4 )
+[connection signal="input_event" from="." to="." method="_on_Crop_input_event"]
+[connection signal="mouse_entered" from="." to="." method="_on_Crop_mouse_entered"]
