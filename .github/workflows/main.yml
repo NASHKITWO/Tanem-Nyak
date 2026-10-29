@@ -1,0 +1,64 @@
+name: Test & Build Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 3.5.3
+
+jobs:
+  test:
+    name: Unit tests (GUT)
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run GUT tests
+        run: godot --path . -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gexit
+
+  android:
+    name: Build Android APK (debug)
+    needs: test
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+
+      - name: Debug keystore + editor settings
+        run: |
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android \
+            -keystore /root/debug.keystore -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+          mkdir -v -p ~/.config/godot
+          printf '%s\n' \
+            '[gd_resource type="EditorSettings" format=2]' \
+            '' \
+            '[resource]' \
+            'export/android/android_sdk_path = "/usr/lib/android-sdk"' \
+            'export/android/debug_keystore = "/root/debug.keystore"' \
+            'export/android/debug_keystore_user = "androiddebugkey"' \
+            'export/android/debug_keystore_pass = "android"' \
+            > ~/.config/godot/editor_settings-3.tres
+
+      - name: Import assets
+        run: timeout 90 godot --path . --editor || true
+
+      - name: Export APK
+        run: |
+          mkdir -v -p build/android
+          godot --path . --export-debug "Android" build/android/TanemNyak.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TanemNyak-android-debug
+          path: build/android/TanemNyak.apk
